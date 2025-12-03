@@ -26,7 +26,6 @@ An AI-powered multi-agent system for managing agile sprint ceremonies with intel
 - [Deployment](#deployment)
 - [Contributing](#contributing)
 - [Troubleshooting](#troubleshooting)
-- [License](#license)
 
 ---
 
