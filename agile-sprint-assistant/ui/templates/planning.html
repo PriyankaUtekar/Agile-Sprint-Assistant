@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Planning - Agile Sprint Assistant</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        h3 {
+            margin-top: 25px;
+        }
+        
+        .nav-header {
+            background: #333;
+            color: white;
+            padding: 15px;
+            margin: -30px -30px 20px -30px;
+        }
+        
+        .nav-header h3 {
+            margin: 0;
+        }
+        
+        .nav-header a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        
+        .nav-header a:hover {
+            text-decoration: underline;
+        }
+        
+        .nav-header a.active {
+            font-weight: bold;
+        }
+        
+        .sprint-info {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .story-card {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .story-header {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .story-points {
+            display: inline-block;
+            font-weight: bold;
+            padding: 2px 8px;
+            margin-left: 10px;
+        }
+        
+        .story-points.approved {
+            color: #4caf50;
+        }
+        
+        .story-points.pending {
+            color: #ff9800;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f5f5f5;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin: 15px 0;
+        }
+        
+        form {
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+        }
+        
+        label {
+            display: block;
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ddd;
+        }
+        
+        select option:disabled {
+            color: #999;
+            font-style: italic;
+        }
+        
+        button {
+            padding: 12px 25px;
+            margin: 10px 5px 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            border: 2px solid #333;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #333;
+            color: white;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #999;
+        }
+        
+        .reset-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .decision-buttons {
+            margin: 20px 0;
+        }
+        
+        .decision-buttons button {
+            margin-right: 10px;
+        }
+        
+        .message-section {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .warning {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-header">
+            <h3>Agile Sprint Assistant</h3>
+            <div style="margin-top: 10px;">
+                <a href="/">HOME</a>
+                <a href="/planning" class="active">PLANNING</a>
+                <a href="/retrospective">RETROSPECTIVE</a>
+                <a href="/reports">REPORTS</a>
+            </div>
+        </div>
+
+        <h1>Sprint Planning</h1>
+
+        {% if sprint %}
+        <div class="sprint-info">
+            <strong>Sprint {{ sprint.sprint_number }}: {{ sprint.team_name }}</strong><br>
+            Goal: {{ sprint.sprint_goal }}<br>
+            Duration: {{ sprint.start_date.strftime('%Y-%m-%d') }} to {{ sprint.end_date.strftime('%Y-%m-%d') }}<br>
+            Status: {{ sprint.status }}
+        </div>
+        {% endif %}
+
+        <!-- Start Planning Button -->
+        {% if not planning_started %}
+        <form method="post" action="/start-planning">
+            <button type="submit">Start Planning Session</button>
+        </form>
+        {% else %}
+
+        <!-- Display Messages -->
+        {% for message in messages %}
+            {% if message.type == "comparison" %}
+                <div class="message-section">
+                    <pre>{{ message.content }}</pre>
+                    <div class="decision-buttons">
+                        <form method="post" action="/finalize-estimate" style="display: inline;">
+                            <input type="hidden" name="story_id" value="{{ message.story_id }}">
+                            <input type="hidden" name="accept_ai" value="false">
+                            <button type="submit">Accept Team Estimate ({{ message.team_estimate }} pts)</button>
+                        </form>
+                        <form method="post" action="/finalize-estimate" style="display: inline;">
+                            <input type="hidden" name="story_id" value="{{ message.story_id }}">
+                            <input type="hidden" name="accept_ai" value="true">
+                            <button type="submit">Accept AI Estimate ({{ message.agent_estimate }} pts)</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="message-section">
+                    <pre>{{ message.content }}</pre>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Display Stories -->
+        {% if stories %}
+        <h3>User Stories for This Sprint</h3>
+        {% for story in stories %}
+        <div class="story-card">
+            <div class="story-header">
+                {{ story.story_id }}: {{ story.title }}
+                {% if story.story_points and story.story_points_approved %}
+                    <span class="story-points approved">[{{ story.story_points }} pts ✓]</span>
+                {% elif story.story_points %}
+                    <span class="story-points pending">[{{ story.story_points }} pts (pending)]</span>
+                {% else %}
+                    <span class="story-points">[Not estimated yet]</span>
+                {% endif %}
+            </div>
+            <div><strong>Description:</strong> {{ story.description }}</div>
+            <div><strong>Acceptance Criteria:</strong> {{ story.acceptance_criteria }}</div>
+            <div><strong>Priority:</strong> {{ story.priority }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Estimate Story Form -->
+        <h3>Estimate a Story</h3>
+        <form method="post" action="/submit-estimate">
+            <label>Story ID:</label>
+            <select name="story_id" required>
+                <option value="">Select a story...</option>
+                {% for story in stories %}
+                    {% if story.story_points_approved %}
+                        <option value="{{ story.story_id }}" disabled>{{ story.story_id }} - {{ story.title }} [{{ story.story_points }} pts ✓ Finalized]</option>
+                    {% else %}
+                        <option value="{{ story.story_id }}">
+                            {{ story.story_id }} - {{ story.title }}
+                            {% if story.story_points %}[{{ story.story_points }} pts - pending]{% endif %}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            
+            <label>Team's Story Point Estimate:</label>
+            <select name="team_estimate" required>
+                <option value="">Select points...</option>
+                <option value="1">1 point</option>
+                <option value="2">2 points</option>
+                <option value="3">3 points</option>
+                <option value="5">5 points</option>
+                <option value="8">8 points</option>
+                <option value="13">13 points</option>
+            </select>
+            
+            <label>Team's Reasoning:</label>
+            <textarea name="team_reasoning" rows="3" required placeholder="Why did the team estimate this number of points?"></textarea>
+            
+            <button type="submit">Get AI Comparison</button>
+        </form>
+
+        <!-- Generate Plan Button -->
+        <h3>Generate Sprint Plan</h3>
+        <p>Once all stories are estimated and approved, generate the comprehensive sprint plan.</p>
+        <form method="post" action="/generate-plan">
+            <button type="submit">Generate Sprint Plan</button>
+        </form>
+
+        <!-- Approve Plan Section -->
+        <h3>Approve Sprint Plan</h3>
+        
+        {# Use selectattr filter to check if any message has type="plan" #}
+        {% if messages|selectattr("type", "equalto", "plan")|list|length > 0 %}
+            {# Plan has been generated - enable the form #}
+            <form method="post" action="/approve-plan">
+                <label>Scrum Master:</label>
+                <input type="text" name="scrum_master" required placeholder="Your name">
+                
+                <label>Comments (optional):</label>
+                <textarea name="comments" rows="2" placeholder="Any additional comments about the plan"></textarea>
+                
+                <button type="submit">Approve Plan</button>
+            </form>
+        {% else %}
+            {# Plan has NOT been generated - show warning and disable form #}
+            <div class="warning">
+                ⚠️ You must generate the sprint plan before you can approve it.
+            </div>
+            <form method="post" action="/approve-plan">
+                <label>Scrum Master:</label>
+                <input type="text" name="scrum_master" required placeholder="Your name" disabled>
+                
+                <label>Comments (optional):</label>
+                <textarea name="comments" rows="2" placeholder="Any additional comments about the plan" disabled></textarea>
+                
+                <button type="submit" disabled>Approve Plan (Generate plan first)</button>
+            </form>
+        {% endif %}
+
+        <!-- Reset Planning Button -->
+        <div class="reset-section">
+            <form method="post" action="/reset-planning" onsubmit="return confirm('Reset planning session? This will clear all estimates.');">
+                <button type="submit">Reset Planning Session</button>
+            </form>
+        </div>
+
+        {% endif %}
+    </div>
+</body>
+</html>

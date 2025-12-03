@@ -1,0 +1,21 @@
+# Run this in Python to see available models
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+print("Checking available Gemini models...\n")
+
+try:
+    models = genai.list_models()
+    print("✅ Models that support generateContent:")
+    for model in models:
+        if 'generateContent' in model.supported_generation_methods:
+            print(f"  - {model.name}")
+    print("\n✅ All available models:")
+    for model in models:
+        print(f"  - {model.name}: {model.supported_generation_methods}")
+except Exception as e:
+    print(f"❌ Error: {e}")

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Reports - Agile Sprint Assistant</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        h2 {
+            margin-top: 25px;
+        }
+        
+        .nav-header {
+            background: #333;
+            color: white;
+            padding: 15px;
+            margin: -30px -30px 20px -30px;
+        }
+        
+        .nav-header h3 {
+            margin: 0;
+        }
+        
+        .nav-header a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        
+        .nav-header a:hover {
+            text-decoration: underline;
+        }
+        
+        .nav-header a.active {
+            font-weight: bold;
+        }
+        
+        .sprint-selector {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .sprint-info {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #f5f5f5;
+            padding: 15px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2196f3;
+            margin: 10px 0;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .chart-container {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            position: relative;
+            height: 400px;
+        }
+        
+        select {
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ddd;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status-active {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status-completed {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .status-planning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .no-data {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+        }
+        
+        .chart-note {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-header">
+            <h3>Agile Sprint Assistant</h3>
+            <div style="margin-top: 10px;">
+                <a href="/">HOME</a>
+                <a href="/planning">PLANNING</a>
+                <a href="/retrospective">RETROSPECTIVE</a>
+                <a href="/reports" class="active">REPORTS</a>
+            </div>
+        </div>
+
+        <h1>Sprint Reports & Analytics</h1>
+
+        <!-- Sprint Selector -->
+        <div class="sprint-selector">
+            <form method="get" action="/reports" style="display: flex; align-items: center;">
+                <label style="margin-right: 10px;"><strong>Select Sprint:</strong></label>
+                <select name="sprint_num" onchange="this.form.submit()">
+                    {% for s in sprints %}
+                    <option value="{{ s.sprint_number }}" {% if sprint and s.sprint_number == sprint.sprint_number %}selected{% endif %}>
+                        Sprint {{ s.sprint_number }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        {% if sprint %}
+        <!-- Sprint Overview -->
+        <div class="sprint-info">
+            <h2 style="margin: 0 0 10px 0;">
+                Sprint {{ sprint.sprint_number }}: {{ sprint.team_name }}
+                <span class="status-badge status-{{ sprint.status }}">{{ sprint.status.upper() }}</span>
+            </h2>
+            <strong>Goal:</strong> {{ sprint.sprint_goal }}<br>
+            <strong>Duration:</strong> {{ sprint.start_date.strftime('%Y-%m-%d') }} to {{ sprint.end_date.strftime('%Y-%m-%d') }}<br>
+            <strong>Total Capacity:</strong> {{ sprint.total_capacity }} hours
+        </div>
+
+        <!-- Planning Metrics (ONLY for planning and active sprints) -->
+        {% if sprint.status in ['planning', 'active'] %}
+            {% if stories and stories|length > 0 %}
+            <h2>Sprint Planning Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Stories</div>
+                    <div class="metric-value">{{ stories|length }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Estimated Stories</div>
+                    <div class="metric-value">{{ stories|selectattr('story_points_approved', 'equalto', true)|list|length }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Planned Story Points</div>
+                    <div class="metric-value">{{ stories|selectattr('story_points_approved', 'equalto', true)|map(attribute='story_points')|sum|int }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Capacity</div>
+                    <div class="metric-value">{{ sprint.total_capacity }}h</div>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-data">
+                No stories found for this sprint.
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Completed Sprint Metrics -->
+        {% if sprint.status == 'completed' %}
+            <h2>Sprint Completion Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Planned Points</div>
+                    <div class="metric-value">{{ sprint.planned_points }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Completed Points</div>
+                    <div class="metric-value">{{ sprint.completed_points }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Completion Rate</div>
+                    {% if sprint.planned_points > 0 %}
+                    <div class="metric-value">{{ "%.0f"|format((sprint.completed_points / sprint.planned_points * 100)) }}%</div>
+                    {% else %}
+                    <div class="metric-value">0%</div>
+                    {% endif %}
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Capacity</div>
+                    <div class="metric-value">{{ sprint.total_capacity }}h</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Velocity Chart (for ALL sprints) -->
+        <h2>Sprint Velocity</h2>
+        <div class="chart-container">
+            <canvas id="velocityChart"></canvas>
+        </div>
+        {% if sprint.status in ['planning', 'active'] %}
+        <p class="chart-note">* Showing planned velocity only. Actual velocity will be available after sprint completion.</p>
+        {% endif %}
+
+        <!-- Burndown Chart (for ALL sprints) -->
+        <h2>Sprint Burndown</h2>
+        <div class="chart-container">
+            <canvas id="burndownChart"></canvas>
+        </div>
+        {% if sprint.status in ['planning', 'active'] %}
+        <p class="chart-note">* Showing ideal burndown projection only. Actual burndown will be tracked during sprint execution.</p>
+        {% endif %}
+
+        {% else %}
+        <div class="no-data">
+            No sprint data available.
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+        // Velocity Chart
+        {% if sprint %}
+        const velocityCtx = document.getElementById('velocityChart').getContext('2d');
+        
+        {% if sprint.status in ['planning', 'active'] %}
+        // For planning/active sprints: Show only planned points
+        {% set planned_points = stories|selectattr('story_points_approved', 'equalto', true)|map(attribute='story_points')|sum|int if stories else 0 %}
+        new Chart(velocityCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Sprint {{ sprint.sprint_number }}'],
+                datasets: [{
+                    label: 'Planned Points',
+                    data: [{{ planned_points }}],
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 5,
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Planned Velocity',
+                        font: {
+                            family: 'monospace',
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        {% else %}
+        // For completed sprints: Show planned vs completed
+        new Chart(velocityCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Sprint {{ sprint.sprint_number }}'],
+                datasets: [{
+                    label: 'Planned Points',
+                    data: [{{ sprint.planned_points }}],
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2
+                }, {
+                    label: 'Completed Points',
+                    data: [{{ sprint.completed_points }}],
+                    backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 5,
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sprint Velocity',
+                        font: {
+                            family: 'monospace',
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+
+        // Burndown Chart
+        const burndownCtx = document.getElementById('burndownChart').getContext('2d');
+        
+        {% if sprint.status in ['planning', 'active'] %}
+        // For planning/active sprints: Show only ideal burndown
+        {% set planned_points = stories|selectattr('story_points_approved', 'equalto', true)|map(attribute='story_points')|sum|int if stories else 0 %}
+        {% set sprint_days = ((sprint.end_date - sprint.start_date).days + 1) %}
+        {% set daily_burndown = planned_points / sprint_days if sprint_days > 0 else 0 %}
+        
+        const idealData = [];
+        for (let i = 0; i <= {{ sprint_days }}; i++) {
+            idealData.push({{ planned_points }} - (i * {{ daily_burndown }}));
+        }
+        
+        new Chart(burndownCtx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: {{ sprint_days + 1 }}}, (_, i) => `Day ${i}`),
+                datasets: [{
+                    label: 'Ideal Burndown',
+                    data: idealData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    borderDash: [5, 5]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Story Points Remaining',
+                            font: {
+                                family: 'monospace'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Sprint Days',
+                            font: {
+                                family: 'monospace'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Ideal Burndown Projection',
+                        font: {
+                            family: 'monospace',
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        {% else %}
+        // For completed sprints: Show ideal vs actual burndown
+        {% if burndown_data and burndown_data|length > 0 %}
+        const burndownLabels = [
+            {% for data in burndown_data %}
+            'Day {{ loop.index0 }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        const idealBurndown = [
+            {% for data in burndown_data %}
+            {{ "%.1f"|format(data.ideal_remaining) }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        const actualBurndown = [
+            {% for data in burndown_data %}
+            {{ data.remaining_points }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        new Chart(burndownCtx, {
+            type: 'line',
+            data: {
+                labels: burndownLabels,
+                datasets: [{
+                    label: 'Ideal Burndown',
+                    data: idealBurndown,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    borderDash: [5, 5]
+                }, {
+                    label: 'Actual Burndown',
+                    data: actualBurndown,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Story Points Remaining',
+                            font: {
+                                family: 'monospace'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Sprint Days',
+                            font: {
+                                family: 'monospace'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sprint Burndown Chart',
+                        font: {
+                            family: 'monospace',
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        {% else %}
+        // No burndown data available
+        new Chart(burndownCtx, {
+            type: 'line',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    label: 'Burndown',
+                    data: [0],
+                    borderColor: 'rgba(200, 200, 200, 1)',
+                    backgroundColor: 'rgba(200, 200, 200, 0.1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Story Points Remaining',
+                            font: {
+                                family: 'monospace'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'No Burndown Data Available',
+                        font: {
+                            family: 'monospace',
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+        {% endif %}
+        {% endif %}
+    </script>
+</body>
+</html>

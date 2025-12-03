@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Retrospective - Agile Sprint Assistant</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: monospace;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 1px solid #666;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            margin-top: 25px;
+            color: #333;
+        }
+        h4 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f5f5f5;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin: 15px 0;
+        }
+        
+        form {
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+        }
+        
+        label {
+            display: block;
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ddd;
+        }
+        
+        button {
+            padding: 12px 25px;
+            margin: 10px 5px 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            border: 2px solid #333;
+        }
+        
+        button:hover {
+            background: #333;
+            color: white;
+        }
+        
+        .nav-header {
+            background: #333;
+            color: white;
+            padding: 15px;
+            margin: -30px -30px 20px -30px;
+        }
+        
+        .nav-header h3 {
+            margin: 0;
+            border: none;
+            color: white;
+        }
+        
+        .nav-header a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        
+        .nav-header a:hover {
+            text-decoration: underline;
+        }
+        
+        .nav-header a.active {
+            font-weight: bold;
+        }
+        
+        .reset-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .action-item-form {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+        
+        .step-indicator {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-header">
+            <h3>Agile Sprint Assistant</h3>
+            <div style="margin-top: 10px;">
+                <a href="/">HOME</a>
+                <a href="/planning">PLANNING</a>
+                <a href="/retrospective" class="active">RETROSPECTIVE</a>
+                <a href="/reports">REPORTS</a>
+            </div>
+        </div>
+
+        <h1>Sprint Retrospective</h1>
+
+        <!-- Start Retrospective Form -->
+        {% if not retro_started %}
+        <h3>Start Retrospective</h3>
+        <form method="post" action="/start-retrospective">
+            <label>Select Sprint:</label>
+            <select name="sprint_number" required>
+                <option value="">Choose a completed sprint...</option>
+                {% for sprint in sprints %}
+                <option value="{{ sprint.sprint_number }}">Sprint {{ sprint.sprint_number }} - {{ sprint.sprint_goal }}</option>
+                {% endfor %}
+            </select>
+            
+            <label>Facilitator Name:</label>
+            <input type="text" name="facilitator" required placeholder="Enter your name">
+            
+            <button type="submit">Start Retrospective</button>
+        </form>
+        {% else %}
+
+        <!-- Display Messages -->
+        {% for message in messages %}
+        <pre>{{ message.content }}</pre>
+        {% endfor %}
+
+        <!-- STEP 1: Add Feedback -->
+        <div class="step-indicator">STEP 1: Collect Team Feedback</div>
+        <h3>Add Feedback</h3>
+        <form method="post" action="/add-feedback">
+            <label>Category:</label>
+            <select name="category" required>
+                <option value="">Select category...</option>
+                <option value="went_well">✓ What Went Well</option>
+                <option value="not_well">✗ What Didn't Go Well</option>
+                <option value="improve">→ What Can We Improve</option>
+            </select>
+            
+            <label>Feedback:</label>
+            <textarea name="feedback" rows="3" required placeholder="Share your thoughts..."></textarea>
+            
+            <label>Your Name:</label>
+            <input type="text" name="submitted_by" required placeholder="Enter your name">
+            
+            <button type="submit">Submit Feedback</button>
+        </form>
+
+        <!-- STEP 2: Set Team Sentiment -->
+        <div class="step-indicator">STEP 2: Set Team Sentiment</div>
+        <h3>Set Team Sentiment</h3>
+        <form method="post" action="/set-team-sentiment">
+            <label>Team Sentiment (1-10):</label>
+            <p style="margin: 5px 0; color: #666; font-size: 12px;">
+                1-3: Needs Attention | 4-6: Neutral | 7-9: Positive | 10: Very Positive
+            </p>
+            <input type="number" name="team_sentiment" min="1" max="10" value="7" required>
+            
+            <button type="submit">Set Team Sentiment</button>
+        </form>
+
+        <!-- STEP 3: Create Action Items -->
+        <div class="step-indicator">STEP 3: Create Action Items</div>
+        <h3>Create Action Items</h3>
+        <p style="color: #666; margin-top: 0;">Based on the feedback collected, create specific action items to improve in the next sprint.</p>
+        <form method="post" action="/create-action-items">
+            <div id="action-items-container">
+                <div class="action-item-form">
+                    <h4>Action Item 1</h4>
+                    
+                    <label>Action Item Title:</label>
+                    <input type="text" name="action_title_1" required placeholder="e.g., Improve code review process">
+                    
+                    <label>Description (optional):</label>
+                    <textarea name="action_description_1" rows="2" placeholder="Additional details about this action item"></textarea>
+                    
+                    <label>Assigned To:</label>
+                    <input type="text" name="action_assigned_1" required placeholder="Enter team member name">
+                    
+                    <label>Priority:</label>
+                    <select name="action_priority_1" required>
+                        <option value="high">High</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    
+                    <label>Target Date (optional):</label>
+                    <input type="date" name="action_target_date_1">
+                </div>
+            </div>
+            
+            <button type="button" onclick="addActionItem()" style="background: #28a745; border-color: #28a745; color: white;">+ Add Another Action Item</button>
+            <button type="submit">Create Action Items</button>
+        </form>
+
+        <script>
+        let actionItemCount = 1;
+        
+        function addActionItem() {
+            actionItemCount++;
+            const container = document.getElementById('action-items-container');
+            const newItem = document.createElement('div');
+            newItem.className = 'action-item-form';
+            newItem.innerHTML = `
+                <h4>Action Item ${actionItemCount}</h4>
+                
+                <label>Action Item Title:</label>
+                <input type="text" name="action_title_${actionItemCount}" required placeholder="e.g., Improve code review process">
+                
+                <label>Description (optional):</label>
+                <textarea name="action_description_${actionItemCount}" rows="2" placeholder="Additional details about this action item"></textarea>
+                
+                <label>Assigned To:</label>
+                <input type="text" name="action_assigned_${actionItemCount}" required placeholder="Enter team member name">
+                
+                <label>Priority:</label>
+                <select name="action_priority_${actionItemCount}" required>
+                    <option value="high">High</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                
+                <label>Target Date (optional):</label>
+                <input type="date" name="action_target_date_${actionItemCount}">
+                
+                <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; border-color: #dc3545; color: white; margin-top: 10px;">Remove This Item</button>
+            `;
+            container.appendChild(newItem);
+        }
+        </script>
+
+        <!-- STEP 4: Generate Summary -->
+        <div class="step-indicator">STEP 4: Generate Comprehensive Summary</div>
+        <h3>Generate Retrospective Summary</h3>
+        <p style="color: #666; margin-top: 0;">This will create a comprehensive summary including all feedback, sentiment, and action items.</p>
+        <form method="post" action="/generate-retro-summary">
+            <button type="submit">Generate Summary (Final Step)</button>
+        </form>
+
+        <!-- Reset Session Button -->
+        <div class="reset-section">
+            <form method="post" action="/reset-retrospective" onsubmit="return confirm('Reset retrospective session?');">
+                <button type="submit">Reset Retrospective Session</button>
+            </form>
+        </div>
+
+        {% endif %}
+    </div>
+</body>
+</html>
