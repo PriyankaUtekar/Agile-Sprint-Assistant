@@ -339,5 +339,5 @@ This is the future of agile: **AI-augmented teams** that are more productive, mo
 ---
 
 **Repository**: https://github.com/PriyankaUtekar/Agile-Sprint-Assistant
-**Demo Video**: [YouTube Link]
+**Demo Video**: [[https://youtu.be/MNkNNPb27TU]
 **Built with**: Google Gemini 2.5 Flash, FastAPI, SQLAlchemy, Slack SDK
